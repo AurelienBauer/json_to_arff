@@ -64,6 +64,14 @@ attributes = {
         "name": "keyLabel",
         "type": "STRING"
     },
+    "q": {
+        "name": "vectorCoordX",
+        "type": "NUMERIC"
+    },
+    "r": {
+        "name": "vectorCoordY",
+        "type": "NUMERIC"
+    },
 }
 
 
