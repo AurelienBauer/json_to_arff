@@ -152,6 +152,11 @@ def parse_number_in_params(next_letter):
         return 5 if nbr > 5 else nbr
     return 5
 
+
+def transform_attributes_string(name, type):
+    return "@ATTRIBUTE " + name + ' ' + type + "\n"
+
+
 def format_hard_sensors_data(letter, next_letter, key):
     line = ""
     j = parse_number_in_params(next_letter)
@@ -171,7 +176,7 @@ def format_hard_sensors_attributes(letter, next_letter):
     for coord in "XYZ":
         i = 0
         while i < j:
-            line += "@ATTRIBUTE " + attributes[letter]['name'] + coord + str(i) + ' ' + attributes[letter]['type'] + "\n"
+            line += transform_attributes_string(attributes[letter]['name'] + coord + str(i), attributes[letter]['type'])
             i += 1
 
     return line
@@ -185,7 +190,7 @@ def write_attributes_data(fd, json_data, params):
                 next_letter = "" if len(params) <= (i+1) else params[i+1]
                 line = format_hard_sensors_attributes(letter, next_letter)
             else:
-                line = "@ATTRIBUTE " + attributes[letter]['name'] + " " + attributes[letter]['type'] + "\n"
+                line = transform_attributes_string(attributes[letter]['name'], attributes[letter]['type'])
             fd.write(line)
         i += 1
 
