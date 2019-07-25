@@ -29,7 +29,7 @@ def parse_args():
 
 def open_file(filename):
     try:
-       return open(filename, 'r+')
+        return open(filename, 'r+')
     except IOError:
         print("Error: can\'t find file or read data")
         exit(-1)
@@ -38,12 +38,14 @@ def open_file(filename):
         print("Unexpected error :/")
         exit(-1)
 
+
 def extract_json_data(fd):
     try:
         return json.loads(fd.read())
     except ValueError:
-        print("An error occur during the file is convert in json")
-        exit(-1)
+        print("An error occur during the file is convert in json\n" +
+              "For the file :" + fd.name)
+        return -1
     except Exception as e:
         print (e)
         print("Unexpected error :/")
@@ -79,21 +81,29 @@ def rec_parse_json(json):
 def process(file):
     fd = open_file(file)
     _json = extract_json_data(fd)
-    _json = rec_parse_json(_json)
-    fd.seek(0)
-    fd.truncate()
-    fd.write(json.dumps(_json))
-    fd.close()
+    if not _json == -1:
+        _json = rec_parse_json(_json)
+        fd.seek(0)
+        fd.truncate()
+        fd.write(json.dumps(_json))
+        fd.close()
     return
+
+
+def  rec_read_files(path):
+    for filename in os.listdir(path):
+        filename = path + '/' + filename
+        if filename.endswith('.json'):
+            process(filename)
+        if (os.path.isdir(filename)):
+            rec_read_files(filename)
 
 
 def main():
     print("Convertion start")
     path = parse_args()
     if os.path.isdir(path):
-        for filename in os.listdir(path):
-            if filename.endswith('.json'):
-                process(filename)
+        rec_read_files(path)
     elif path.endswith('.json'):
         process(path)
     else:
