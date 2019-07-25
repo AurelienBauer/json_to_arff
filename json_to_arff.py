@@ -140,7 +140,7 @@ def create_output_file(out_file, in_file_name):
             out_file += in_file_name + ".arff"
 
         if os.path.exists(out_file) and os.path.isfile(out_file):
-            print("File already exist and it was removed.")
+            print("The File already exist.")
             os.remove(out_file)
 
         fd = open(out_file, 'w+')
