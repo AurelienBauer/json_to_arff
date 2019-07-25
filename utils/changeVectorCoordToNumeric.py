@@ -90,12 +90,12 @@ def process(file):
     return
 
 
-def  rec_read_files(path):
+def rec_read_files(path):
     for filename in os.listdir(path):
         filename = path + '/' + filename
         if filename.endswith('.json'):
             process(filename)
-        if (os.path.isdir(filename)):
+        if os.path.isdir(filename):
             rec_read_files(filename)
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys, json, os, ntpath
 
-PARAMS_LIST = "abcdefgijklmnop"
+PARAMS_LIST = "abcdefgijklmnopqr"
 
 attributes = {
     "a": {
@@ -105,8 +105,8 @@ def parse_args():
         print_help()
         exit(-1)
 
-    if len(params) < 1:
-        params = PARAMS_LIST
+    if not any((c in PARAMS_LIST)  for c in params):
+        params += PARAMS_LIST
     return params, in_file, out_file
 
 
@@ -119,8 +119,8 @@ def open_parse_file(in_file):
         print("Error: can\'t find file or read data")
         exit(-1)
     except ValueError:
-        print("An error occur during the file is convert in json")
-        exit(-1)
+        print("An error occur during the file is convert in json : " + in_file)
+        return -1, -1
     except Exception as e:
         print (e)
         print("Unexpected error :/")
@@ -172,7 +172,8 @@ def format_hard_sensors_data(letter, next_letter, key):
     for coord in "xyz":
         i = 0
         while i < j:
-            line += json.dumps(key[attributes[letter]['name']][coord][i]) + ","
+            if attributes[letter]['name'] in key:
+                line += json.dumps(key[attributes[letter]['name']][coord][i]) + ","
             i += 1
     return line
 
@@ -214,17 +215,35 @@ def write_attributes_data(fd, json_data, params):
                         next_letter = "" if len(params) <= (i+1) else params[i + 1]
                         line += format_hard_sensors_data(letter, next_letter, key)
                     else:
-                        line += json.dumps(key[attributes[letter]['name']]) + ","
+                        if attributes[letter]['name'] in key:
+                            line += json.dumps(key[attributes[letter]['name']]) + ","
                 i += 1
             fd.write(line[:-1] + '\n')
 
 
+def rec_read_files(params, in_file, out_file):
+    for filename in os.listdir(in_file):
+        filename = in_file + '/' + filename
+        if filename.endswith('.json'):
+            process(params, filename, out_file)
+        if os.path.isdir(filename) and 'R' in params:
+            rec_read_files(params, filename, out_file)
+
+
+def process(params, in_file, out_file):
+    json_data, in_file_name = open_parse_file(in_file)
+    if not json_data == -1:
+        out_file_fd = create_output_file(out_file, in_file_name)
+        write_attributes_data(out_file_fd, json_data, params)
+        print("Arff file has been generated: " + out_file_fd.name)
+
+
 def main():
     params, in_file, out_file = parse_args()
-    json_data, in_file_name = open_parse_file(in_file)
-    out_file_fd = create_output_file(out_file, in_file_name)
-    write_attributes_data(out_file_fd, json_data, params)
-    print("Arff file has been generated: " + out_file_fd.name)
+    if os.path.isdir(out_file):
+        rec_read_files(params, in_file, out_file)
+    else:
+        process(params, in_file, out_file)
 
 
 if __name__ == "__main__":
