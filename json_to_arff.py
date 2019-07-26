@@ -206,7 +206,7 @@ def format_hard_sensors_data(letter, next_letter, key):
     return line
 
 
-def format_hard_sensors_attributes(letter, next_letter):
+def format_hard_sensors_attributes(letter, next_letter, attributes_number):
     line = ""
     j = parse_number_in_params(next_letter)
 
@@ -215,23 +215,26 @@ def format_hard_sensors_attributes(letter, next_letter):
         while i < j:
             line += transform_attributes_string(attributes[letter]['name'] + coord + str(i), attributes[letter]['type'])
             i += 1
+            attributes_number += 1
 
-    return line
+    return line, attributes_number
 
 
 def write_attributes_data(fd, json_data, params):
     i = 0
+    attributes_number = 0
     for letter in params:
         if letter in PARAMS_LIST:
             if letter in "lmno":
                 next_letter = "" if len(params) <= (i+1) else params[i+1]
-                line = format_hard_sensors_attributes(letter, next_letter)
+                line, attributes_number = format_hard_sensors_attributes(letter, next_letter, attributes_number)
             else:
                 line = transform_attributes_string(attributes[letter]['name'], attributes[letter]['type'])
+                attributes_number += 1
             fd.write(line)
         i += 1
 
-    fd.write("\n@DATA\n")
+    fd.write("\n%Number of features: " + str(attributes_number) + "\n\n@DATA\n")
 
     for section in json_data:
         for key in json_data[section]:
