@@ -173,7 +173,10 @@ def format_hard_sensors_data(letter, next_letter, key):
         i = 0
         while i < j:
             if attributes[letter]['name'] in key:
-                line += json.dumps(key[attributes[letter]['name']][coord][i]) + ","
+                if len(key[attributes[letter]['name']][coord]) > i:
+                    line += json.dumps(key[attributes[letter]['name']][coord][i]) + ","
+                else:
+                    line += str(-1) + ","
             i += 1
     return line
 
