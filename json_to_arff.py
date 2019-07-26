@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys, json, os, ntpath
 
-PARAMS_LIST = "abcdefgijklmnopqr"
+PARAMS_LIST = "abcdefgijklmnopqrs"
 
 attributes = {
     "a": {
@@ -72,11 +72,36 @@ attributes = {
         "name": "vectorCoordY",
         "type": "NUMERIC"
     },
+    "s": {
+        "name": "position",
+        "type": "{ VerticalDominantOnlySit,"
+                " VerticalDominantOnlyWalk,"
+                " VerticalBothBandsSit,"
+                " VerticalBothBandsWalk,"
+                " VerticalIndexFingerOnlySit,"
+                " VerticalIndexFingerOnlyWalk,"
+                " HorizontalBothHandsSit,"
+                " HorizontalBothHandsWalk,"
+                "unknownPosition }"
+    }
+}
+
+UNKNOWN_POSITION = "unknownPosition"
+
+position = {
+    "GDYESVD": "VerticalDominantOnlySit",
+    "UTRBWVD": "VerticalDominantOnlyWalk",
+    "TRYGSVX": "VerticalBothBandsSit",
+    "HTRGWVX": "VerticalBothBandsWalk",
+    "BVOYSVI": "VerticalIndexFingerOnlySit",
+    "ZXGHWVI": "VerticalIndexFingerOnlyWalk",
+    "FGSWHB":  "HorizontalBothHandsSit",
+    "PDJTWHB": "HorizontalBothHandsWalk",
 }
 
 
 def print_help():
-    print(" usage: json_to_arff.py [-abcdefgijklmnop] <input file path> <output file path>\n"
+    print(" usage: json_to_arff.py [-abcdefgijklmnoprs] <input file path> <output file path>\n"
           " options [lmno] could be following by a number between 0 and 5, if no number are choosen the default value is 5.\n")
     for attr in attributes:
         print(attr + " = " + attributes[attr]['name'])
@@ -217,6 +242,11 @@ def write_attributes_data(fd, json_data, params):
                     if letter in "lmno":
                         next_letter = "" if len(params) <= (i+1) else params[i + 1]
                         line += format_hard_sensors_data(letter, next_letter, key)
+                    elif letter == "s":
+                        if section in position:
+                            line += position[section] + ","
+                        else:
+                            line += UNKNOWN_POSITION + ","
                     else:
                         if attributes[letter]['name'] in key:
                             line += json.dumps(key[attributes[letter]['name']]) + ","
