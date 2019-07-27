@@ -47,7 +47,7 @@ def extract_json_data(fd):
               "For the file :" + fd.name)
         return -1
     except Exception as e:
-        print (e)
+        print(e)
         print("Unexpected error :/")
         exit(-1)
 
