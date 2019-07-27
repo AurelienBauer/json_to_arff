@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys, json, os, ntpath
 
-PARAMS_LIST = "abcdefgijklmnopqrs"
+PARAMS_LIST = "abcdefgijklmnopqrstu"
 
 attributes = {
     "a": {
@@ -83,7 +83,15 @@ attributes = {
                 " HorizontalBothHandsSit,"
                 " HorizontalBothHandsWalk,"
                 "unknownPosition }"
-    }
+    },
+    "t": {
+        "name": "UpUpTime",
+        "type": "NUMERIC"
+    },
+    "u": {
+        "name": "DownDownTime",
+        "type": "NUMERIC"
+    },
 }
 
 UNKNOWN_POSITION = "unknownPosition"
@@ -220,6 +228,18 @@ def format_hard_sensors_attributes(letter, next_letter, attributes_number):
     return line, attributes_number
 
 
+def compute_upup(old_json_data, json_data):
+    if old_json_data is not None and 'NoKeyPressDelay' in old_json_data:
+        return str(old_json_data['NoKeyPressDelay'] + json_data ['KeyPressDelay'])
+    return str(-1)
+
+
+def compute_downdown(old_json_data, json_data):
+    if old_json_data is not None and 'NoKeyPressDelay' in json_data:
+        return str(old_json_data['KeyPressDelay'] + json_data ['NoKeyPressDelay'])
+    return str(-1)
+
+
 def write_attributes_data(fd, json_data, params):
     i = 0
     attributes_number = 0
@@ -237,6 +257,7 @@ def write_attributes_data(fd, json_data, params):
     fd.write("\n%Number of features: " + str(attributes_number) + "\n\n@DATA\n")
 
     for section in json_data:
+        old_key = None
         for key in json_data[section]:
             line = ""
             i = 0
@@ -250,11 +271,16 @@ def write_attributes_data(fd, json_data, params):
                             line += position[section] + ","
                         else:
                             line += UNKNOWN_POSITION + ","
+                    elif letter == "t":
+                        line += compute_upup(old_key, key) + ","
+                    elif letter == "u":
+                        line += compute_downdown(old_key, key) + ","
                     else:
                         if attributes[letter]['name'] in key:
                             line += json.dumps(key[attributes[letter]['name']]) + ","
                 i += 1
             fd.write(line[:-1] + '\n')
+            old_key = key
 
 
 def rec_read_files(params, in_file, out_file):
