@@ -54,28 +54,26 @@ def open_file(filename):
         print("Error: can\'t find file or read data")
         exit(-1)
     except Exception as e:
-        print (e)
+        print(e)
         print("Unexpected error :/")
         exit(-1)
 
 
 def find_word_in_json(_json, word, distance):
     i = 0
+    word = word.lower()
     hamming_dist = distance
     word_len = len(word)
     for section in _json:
         for key in _json[section]:
-            #if (key["primaryCode"] > 0):
-              #   print(chr(key["primaryCode"]).lower(), end='')
-            if key["primaryCode"] > 0 and chr(key["primaryCode"]).lower() in word[i].lower():
-                # print("1 + " + chr(key["primaryCode"]).lower())
-                # print("2 + " + word[i].lower())
-                i += 1
-            elif hamming_dist > 0:
-                hamming_dist -= 1
-            else:
-                i = 0
-                hamming_dist = distance
+            if key["primaryCode"] > 0:
+                if chr(key["primaryCode"]).lower() == word[i]:
+                    i += 1
+                elif hamming_dist > 0:
+                    hamming_dist -= 1
+                else:
+                    i = 0
+                    hamming_dist = distance
             if i >= word_len - distance:
                 return True
     return False
@@ -96,7 +94,7 @@ def extract_json_data(fd):
               "For the file :" + fd.name)
         return -1
     except Exception as e:
-        print (e)
+        print(e)
         print("Unexpected error :/")
         exit(-1)
 
@@ -110,4 +108,4 @@ def main():
 
 
 if __name__ == "__main__":
-   main()
+    main()
