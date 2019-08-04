@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys, json, os, ntpath
 
-PARAMS_LIST = "abcdefgijklmnopqrstu"
+PARAMS_LIST = "abcdefgijklmnopqrstuv"
 
 attributes = {
     "a": {
@@ -92,6 +92,10 @@ attributes = {
         "name": "DownDownTime",
         "type": "NUMERIC"
     },
+    "v": {
+        "name": "LatencyTime",
+        "type": "NUMERIC"
+    }
 }
 
 UNKNOWN_POSITION = "unknownPosition"
@@ -103,7 +107,7 @@ position = {
     "HTRGWVX": "VerticalBothBandsWalk",
     "BVOYSVI": "VerticalIndexFingerOnlySit",
     "ZXGHWVI": "VerticalIndexFingerOnlyWalk",
-    "FGSWHB":  "HorizontalBothHandsSit",
+    "FGSWSHB":  "HorizontalBothHandsSit",
     "PDJTWHB": "HorizontalBothHandsWalk",
 }
 
@@ -228,15 +232,20 @@ def format_hard_sensors_attributes(letter, next_letter, attributes_number):
     return line, attributes_number
 
 
-def compute_upup(old_json_data, json_data):
-    if old_json_data is not None and 'NoKeyPressDelay' in old_json_data:
-        return str(old_json_data['NoKeyPressDelay'] + json_data ['KeyPressDelay'])
+def compute_upup(json_data):
+    if json_data is not None and 'NoKeyPressDelay' in json_data:
+        return str(json_data['NoKeyPressDelay'] + json_data ['KeyPressDelay'])
     return str(-1)
 
 
 def compute_downdown(old_json_data, json_data):
     if old_json_data is not None and 'NoKeyPressDelay' in json_data:
         return str(old_json_data['KeyPressDelay'] + json_data ['NoKeyPressDelay'])
+    return str(-1)
+
+def compute_latency(old_json_data, json_data):
+    if old_json_data is not None and 'NoKeyPressDelay' in json_data:
+        return str(old_json_data['KeyPressDelay'] + json_data ['NoKeyPressDelay'] + + json_data ['KeyPressDelay'])
     return str(-1)
 
 
@@ -272,9 +281,11 @@ def write_attributes_data(fd, json_data, params):
                         else:
                             line += UNKNOWN_POSITION + ","
                     elif letter == "t":
-                        line += compute_upup(old_key, key) + ","
+                        line += compute_upup(key) + ","
                     elif letter == "u":
                         line += compute_downdown(old_key, key) + ","
+                    elif letter == "v":
+                        line += compute_latency(old_key, key) + ","
                     else:
                         if attributes[letter]['name'] in key:
                             line += json.dumps(key[attributes[letter]['name']]) + ","
