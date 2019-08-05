@@ -3,6 +3,11 @@ import sys, json, os, ntpath
 
 PARAMS_LIST = "abcdefgijklmnopqrstuv"
 
+HEADER =    "% Generate by Json_to_arff script\n" \
+            "% Author: Aurélien Bauer\n" \
+            "% For an academic project at the University of Kent\n" \
+            "@RELATION continuous_authentication\n\n"
+
 attributes = {
     "a": {
         "name": "primaryCode",
@@ -121,15 +126,18 @@ def print_help():
 
 def parse_args():
     params = ""
+    spe_params = list()
     in_file = ""
     out_file = ""
 
     for arg in sys.argv[1:]:
-        if arg[0] == "-":
+        if len(arg) >= 2 and arg[0] == "-" and arg[1] != "-":
             if len(arg) > 1 and arg[1] == 'h':
                 print_help()
                 exit(0)
             params += arg[1:]
+        elif len(arg) >= 2 and arg[0] == "-" and arg [1] == "-":
+            spe_params.append(arg)
         elif len(in_file) < 1:
             in_file = arg
         elif len(out_file) < 1:
@@ -144,7 +152,7 @@ def parse_args():
 
     if not any((c in PARAMS_LIST)  for c in params):
         params += PARAMS_LIST
-    return params, in_file, out_file
+    return params, in_file, out_file, spe_params
 
 
 def open_parse_file(in_file):
@@ -177,15 +185,28 @@ def create_output_file(out_file, in_file_name):
             out_file += in_file_name + ".arff"
 
         if os.path.exists(out_file) and os.path.isfile(out_file):
-            print("The File already exist.")
+            print("The File already exist: " + out_file + ".")
             os.remove(out_file)
 
         fd = open(out_file, 'w+')
-        fd.write(   "% Generate by Json_to_arff script\n" +
-                    "% Author: Aurélien Bauer\n" +
-                    "% For an academic project at the University of Kent\n"+
-                    "@RELATION continuous_authentication\n\n")
+        fd.write(HEADER)
         return fd
+    except IOError as e:
+        print(e)
+        exit(-1)
+
+
+def open_output_file(out_file):
+    try:
+        if os.path.isdir(out_file):
+            if out_file[-1:] != "/":
+                out_file += '/'
+            out_file += "out.json.arff"
+
+        if not (os.path.exists(out_file) and os.path.isfile(out_file)):
+            return create_output_file(out_file, "out.json")
+
+        return open(out_file, 'a+')
     except IOError as e:
         print(e)
         exit(-1)
@@ -243,27 +264,36 @@ def compute_downdown(old_json_data, json_data):
         return str(old_json_data['KeyPressDelay'] + json_data ['NoKeyPressDelay'])
     return str(-1)
 
+
 def compute_latency(old_json_data, json_data):
     if old_json_data is not None and 'NoKeyPressDelay' in json_data:
         return str(old_json_data['KeyPressDelay'] + json_data ['NoKeyPressDelay'] + + json_data ['KeyPressDelay'])
     return str(-1)
 
 
+def write_data_default(letter, key):
+    if attributes[letter]['name'] in key:
+        return json.dumps(key[attributes[letter]['name']])
+    else:
+        return "-1"
+
+
 def write_attributes_data(fd, json_data, params):
     i = 0
     attributes_number = 0
-    for letter in params:
-        if letter in PARAMS_LIST:
-            if letter in "lmno":
-                next_letter = "" if len(params) <= (i+1) else params[i+1]
-                line, attributes_number = format_hard_sensors_attributes(letter, next_letter, attributes_number)
-            else:
-                line = transform_attributes_string(attributes[letter]['name'], attributes[letter]['type'])
-                attributes_number += 1
-            fd.write(line)
-        i += 1
+    if fd.tell() == len(HEADER)+1:
+        for letter in params:
+            if letter in PARAMS_LIST:
+                if letter in "lmno":
+                    next_letter = "" if len(params) <= (i+1) else params[i+1]
+                    line, attributes_number = format_hard_sensors_attributes(letter, next_letter, attributes_number)
+                else:
+                    line = transform_attributes_string(attributes[letter]['name'], attributes[letter]['type'])
+                    attributes_number += 1
+                fd.write(line)
+            i += 1
 
-    fd.write("\n%Number of features: " + str(attributes_number) + "\n\n@DATA\n")
+        fd.write("\n%Number of features: " + str(attributes_number) + "\n\n@DATA\n")
 
     for section in json_data:
         old_key = None
@@ -287,36 +317,39 @@ def write_attributes_data(fd, json_data, params):
                     elif letter == "v":
                         line += compute_latency(old_key, key) + ","
                     else:
-                        if attributes[letter]['name'] in key:
-                            line += json.dumps(key[attributes[letter]['name']]) + ","
+                        line += write_data_default(letter, key) + ","
                 i += 1
             fd.write(line[:-1] + '\n')
             old_key = key
 
 
-def rec_read_files(params, in_file, out_file):
+def rec_read_files(params, in_file, out_file, spe_params):
     for filename in os.listdir(in_file):
         filename = in_file + '/' + filename
         if filename.endswith('.json'):
-            process(params, filename, out_file)
+            process(params, filename, out_file, spe_params)
         if os.path.isdir(filename) and 'R' in params:
-            rec_read_files(params, filename, out_file)
+            rec_read_files(params, filename, out_file, spe_params)
 
 
-def process(params, in_file, out_file):
+def process(params, in_file, out_file, spe_params):
     json_data, in_file_name = open_parse_file(in_file)
     if not json_data == -1:
-        out_file_fd = create_output_file(out_file, in_file_name)
+        if "--concat" in spe_params:
+            out_file_fd = open_output_file(out_file)
+        else:
+            out_file_fd = create_output_file(out_file, in_file_name)
         write_attributes_data(out_file_fd, json_data, params)
-        print("Arff file has been generated: " + out_file_fd.name)
+        print("[Json To Arff] Processing complete for the files: input => " + in_file_name + ", output => " + out_file_fd.name)
+        out_file_fd.close()
 
 
 def main():
-    params, in_file, out_file = parse_args()
+    params, in_file, out_file, spe_params = parse_args()
     if os.path.isdir(out_file):
-        rec_read_files(params, in_file, out_file)
+        rec_read_files(params, in_file, out_file, spe_params)
     else:
-        process(params, in_file, out_file)
+        process(params, in_file, out_file, spe_params)
 
 
 if __name__ == "__main__":
