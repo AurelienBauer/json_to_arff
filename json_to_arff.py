@@ -119,7 +119,10 @@ position = {
 
 def print_help():
     print(" usage: json_to_arff.py [-abcdefgijklmnoprs] <input file path> <output file path>\n"
-          " options [lmno] could be following by a number between 0 and 5, if no number are choosen the default value is 5.\n")
+          "options [lmno] could be following by a number between 0 and 5, if no number are choosen the default value "
+          "is 5.\n "
+          "option [--concat] can be use to concat all the data if the <input file path> is a directory in one file ("
+          "output)\n")
     for attr in attributes:
         print(attr + " = " + attributes[attr]['name'])
 
@@ -346,7 +349,7 @@ def process(params, in_file, out_file, spe_params):
 
 def main():
     params, in_file, out_file, spe_params = parse_args()
-    if os.path.isdir(out_file):
+    if os.path.isdir(in_file):
         rec_read_files(params, in_file, out_file, spe_params)
     else:
         process(params, in_file, out_file, spe_params)
