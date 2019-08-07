@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys, json, os, ntpath
 
-PARAMS_LIST = "abcdefgijklmnopqrstuv"
+PARAMS_LIST = "abcdefgijklmnopqrstuvw"
 
 HEADER =    "% Generate by Json_to_arff script\n" \
             "% Author: Aurélien Bauer\n" \
@@ -100,6 +100,10 @@ attributes = {
     "v": {
         "name": "LatencyTime",
         "type": "NUMERIC"
+    },
+    "w": {
+        "name": "class",
+        "type": "{0, 1}"
     }
 }
 
@@ -122,7 +126,9 @@ def print_help():
           "options [lmno] could be following by a number between 0 and 5, if no number are choosen the default value "
           "is 5.\n "
           "option [--concat] can be use to concat all the data if the <input file path> is a directory in one file ("
-          "output)\n")
+          "output).\n"
+          "option [--set-true-file:<file name>] can be used to set the true user file, if this option is set the w "
+          "argument should be in the command line too.\n")
     for attr in attributes:
         print(attr + " = " + attributes[attr]['name'])
 
@@ -281,7 +287,18 @@ def write_data_default(letter, key):
         return "-1"
 
 
-def write_attributes_data(fd, json_data, params):
+def write_data_position(section):
+    if section in position:
+        return position[section] + ","
+    return UNKNOWN_POSITION + ","
+
+
+def write_data_sensors(params, letter, key, i):
+    next_letter = "" if len(params) <= (i + 1) else params[i + 1]
+    return format_hard_sensors_data(letter, next_letter, key)
+
+
+def write_attributes_data(fd, json_data, params, in_file_name, true_file):
     i = 0
     attributes_number = 0
     if fd.tell() == len(HEADER)+1:
@@ -306,19 +323,17 @@ def write_attributes_data(fd, json_data, params):
             for letter in params:
                 if letter in PARAMS_LIST:
                     if letter in "lmno":
-                        next_letter = "" if len(params) <= (i+1) else params[i + 1]
-                        line += format_hard_sensors_data(letter, next_letter, key)
+                        line += write_data_sensors(params, letter, key, i)
                     elif letter == "s":
-                        if section in position:
-                            line += position[section] + ","
-                        else:
-                            line += UNKNOWN_POSITION + ","
+                        line += write_data_position(section) + ","
                     elif letter == "t":
                         line += compute_upup(key) + ","
                     elif letter == "u":
                         line += compute_downdown(old_key, key) + ","
                     elif letter == "v":
                         line += compute_latency(old_key, key) + ","
+                    elif letter == "w":
+                        line += ("1" if in_file_name == true_file else "0") + ","
                     else:
                         line += write_data_default(letter, key) + ","
                 i += 1
@@ -326,33 +341,45 @@ def write_attributes_data(fd, json_data, params):
             old_key = key
 
 
-def rec_read_files(params, in_file, out_file, spe_params):
+def rec_read_files(params, in_file, out_file, spe_params, true_file):
     for filename in os.listdir(in_file):
         filename = in_file + '/' + filename
         if filename.endswith('.json'):
-            process(params, filename, out_file, spe_params)
+            process(params, filename, out_file, spe_params, true_file)
         if os.path.isdir(filename) and 'R' in params:
-            rec_read_files(params, filename, out_file, spe_params)
+            rec_read_files(params, filename, out_file, spe_params, true_file)
 
 
-def process(params, in_file, out_file, spe_params):
+def process(params, in_file, out_file, spe_params, true_file):
     json_data, in_file_name = open_parse_file(in_file)
     if not json_data == -1:
         if "--concat" in spe_params:
             out_file_fd = open_output_file(out_file)
         else:
             out_file_fd = create_output_file(out_file, in_file_name)
-        write_attributes_data(out_file_fd, json_data, params)
+        write_attributes_data(out_file_fd, json_data, params, in_file_name, true_file)
         print("[Json To Arff] Processing complete for the files: input => " + in_file_name + ", output => " + out_file_fd.name)
         out_file_fd.close()
 
 
+def get_true_file(spe_params):
+    split = list()
+    for params in spe_params:
+        if "--set-true-file:" in params:
+            split = params.split(':')
+    if len(split) >= 2:
+        return split[1]
+    return None
+
+
+
 def main():
     params, in_file, out_file, spe_params = parse_args()
+    true_file = get_true_file(spe_params)
     if os.path.isdir(in_file):
-        rec_read_files(params, in_file, out_file, spe_params)
+        rec_read_files(params, in_file, out_file, spe_params, true_file)
     else:
-        process(params, in_file, out_file, spe_params)
+        process(params, in_file, out_file, spe_params, true_file)
 
 
 if __name__ == "__main__":
