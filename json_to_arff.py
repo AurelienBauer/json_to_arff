@@ -159,7 +159,7 @@ def parse_args():
         print_help()
         exit(-1)
 
-    if not any((c in PARAMS_LIST)  for c in params):
+    if not any((c in PARAMS_LIST) for c in params):
         params += PARAMS_LIST
     return params, in_file, out_file, spe_params
 
@@ -301,7 +301,9 @@ def write_data_sensors(params, letter, key, i):
 def write_attributes_data(fd, json_data, params, in_file_name, true_file):
     i = 0
     attributes_number = 0
-    if fd.tell() == len(HEADER)+1:
+    print("FD TELL = " +  str(fd.tell()))
+    print("HEADER = " + str(len(HEADER)))
+    if fd.tell() == len(HEADER)+10:
         for letter in params:
             if letter in PARAMS_LIST:
                 if letter in "lmno":
