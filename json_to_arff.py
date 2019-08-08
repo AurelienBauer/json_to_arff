@@ -301,8 +301,6 @@ def write_data_sensors(params, letter, key, i):
 def write_attributes_data(fd, json_data, params, in_file_name, true_file):
     i = 0
     attributes_number = 0
-    print("FD TELL = " +  str(fd.tell()))
-    print("HEADER = " + str(len(HEADER)))
     if fd.tell() == len(HEADER)+10:
         for letter in params:
             if letter in PARAMS_LIST:
