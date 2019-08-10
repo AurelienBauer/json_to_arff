@@ -8,6 +8,8 @@ HEADER =    "% Generate by Json_to_arff script\n" \
             "% For an academic project at the University of Kent\n" \
             "@RELATION continuous_authentication\n\n"
 
+# abcdefgqrtuv
+
 attributes = {
     "a": {
         "name": "primaryCode",
@@ -122,12 +124,12 @@ position = {
 
 
 def print_help():
-    print(" usage: json_to_arff.py [-abcdefgijklmnoprs] <input file path> <output file path>\n"
+    print(" usage: json_to_arff.py [-abcdefgijklmnopqrstuvw] <input file path> <output file path>\n"
           "options [lmno] could be following by a number between 0 and 5, if no number are choosen the default value "
           "is 5.\n "
           "option [--concat] can be use to concat all the data if the <input file path> is a directory in one file ("
           "output).\n"
-          "option [--set-true-file:<file name>] can be used to set the true user file, if this option is set the w "
+          "option [--set-true-file:<file name_1>:<file name_2>] can be used to set the true user file, if this option is set the w "
           "argument should be in the command line too.\n")
     for attr in attributes:
         print(attr + " = " + attributes[attr]['name'])
@@ -333,7 +335,7 @@ def write_attributes_data(fd, json_data, params, in_file_name, true_file):
                     elif letter == "v":
                         line += compute_latency(old_key, key) + ","
                     elif letter == "w":
-                        line += ("1" if in_file_name == true_file else "0") + ","
+                        line += ("1" if in_file_name in true_file else "0") + ","
                     else:
                         line += write_data_default(letter, key) + ","
                 i += 1
@@ -368,9 +370,9 @@ def get_true_file(spe_params):
         if "--set-true-file:" in params:
             split = params.split(':')
     if len(split) >= 2:
-        return split[1]
+        split.pop(0)
+        return split
     return None
-
 
 
 def main():
