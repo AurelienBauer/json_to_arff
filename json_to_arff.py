@@ -265,7 +265,7 @@ def format_hard_sensors_data(letter, next_letter, key):
                 if len(key[attributes[letter]['name']][coord]) > i:
                     line += json.dumps(key[attributes[letter]['name']][coord][i]) + ","
                 else:
-                    line += str(-1) + ","
+                    line += "?,"
             i += 1
     return line
 
@@ -287,26 +287,26 @@ def format_hard_sensors_attributes(letter, next_letter, attributes_number):
 def compute_upup(json_data):
     if json_data is not None and 'NoKeyPressDelay' in json_data:
         return str(json_data['NoKeyPressDelay'] + json_data ['KeyPressDelay'])
-    return str(-1)
+    return "?"
 
 
 def compute_downdown(old_json_data, json_data):
     if old_json_data is not None and 'NoKeyPressDelay' in json_data:
         return str(old_json_data['KeyPressDelay'] + json_data ['NoKeyPressDelay'])
-    return str(-1)
+    return "?"
 
 
 def compute_latency(old_json_data, json_data):
     if old_json_data is not None and 'NoKeyPressDelay' in json_data:
         return str(old_json_data['KeyPressDelay'] + json_data ['NoKeyPressDelay'] + + json_data ['KeyPressDelay'])
-    return str(-1)
+    return "?"
 
 
 def write_data_default(letter, key):
     if attributes[letter]['name'] in key:
         return json.dumps(key[attributes[letter]['name']])
     else:
-        return "-1"
+        return "?"
 
 
 def write_data_position(section):
@@ -341,7 +341,8 @@ def write_data_average(params, letter, key, i):
                 if len(key[attributes[letter]['relatedTo']][coord]) > i:
                     somme += float(json.dumps(key[attributes[letter]['relatedTo']][coord][i]))
             i += 1
-        line += str(somme / j) + ","
+        result = "?" if somme / j == 0 else str(somme / j)
+        line += result + ","
     return line
 
 
