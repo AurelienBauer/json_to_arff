@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys, json, os, ntpath
 
-PARAMS_LIST = "abcdefgijklmnopqrstuvw"
+PARAMS_LIST = "abcdefgijklmnopqrstuvwxyzA"
 
 HEADER =    "% Generate by Json_to_arff script\n" \
             "% Author: Aurélien Bauer\n" \
@@ -104,6 +104,26 @@ attributes = {
         "type": "NUMERIC"
     },
     "w": {
+        "name": "AverageRotationVectorOnPress",
+        "relatedTo": "RotationVectorOnPress",
+        "type": "NUMERIC"
+    },
+    "x": {
+        "name": "AverageRotationVectorOnRelease",
+        "relatedTo": "RotationVectorOnRelease",
+        "type": "NUMERIC"
+    },
+    "y": {
+        "name": "AverageLinearAccelerationOnPress",
+        "relatedTo": "LinearAccelerationOnPress",
+        "type": "NUMERIC"
+    },
+    "z": {
+        "name": "AverageLinearAccelerationOnRelease",
+        "relatedTo": "LinearAccelerationOnRelease",
+        "type": "NUMERIC"
+    },
+    "A": {
         "name": "class",
         "type": "{0, 1}"
     }
@@ -124,12 +144,12 @@ position = {
 
 
 def print_help():
-    print(" usage: json_to_arff.py [-abcdefgijklmnopqrstuvw] <input file path> <output file path>\n"
-          "options [lmno] could be following by a number between 0 and 5, if no number are choosen the default value "
-          "is 5.\n "
+    print(" usage: json_to_arff.py [-abcdefgijklmnopqrstuvwxyzA] <input file path> <output file path>\n"
+          "options [lmnowxyz] could be following by a number between 0 and 5, if no number are choosen the default value "
+          "is 5.\n"
           "option [--concat] can be use to concat all the data if the <input file path> is a directory in one file ("
           "output).\n"
-          "option [--set-true-file:<file name_1>:<file name_2>] can be used to set the true user file, if this option is set the w "
+          "option [--set-true-file:<file name_1>:<file name_2>] can be used to set the true user file, if this option is set the A"
           "argument should be in the command line too.\n")
     for attr in attributes:
         print(attr + " = " + attributes[attr]['name'])
@@ -300,6 +320,31 @@ def write_data_sensors(params, letter, key, i):
     return format_hard_sensors_data(letter, next_letter, key)
 
 
+def format_average_attributes(letter, attributes_number):
+    line = ""
+
+    for coord in "XYZ":
+        line += transform_attributes_string(attributes[letter]['name'] + coord, attributes[letter]['type'])
+    return line, attributes_number
+
+
+def write_data_average(params, letter, key, i):
+    line = ""
+    next_letter = "" if len(params) <= (i + 1) else params[i + 1]
+    j = parse_number_in_params(next_letter)
+
+    for coord in "xyz":
+        i = 0
+        somme = 0
+        while i < j:
+            if attributes[letter]['relatedTo'] in key:
+                if len(key[attributes[letter]['relatedTo']][coord]) > i:
+                    somme += float(json.dumps(key[attributes[letter]['relatedTo']][coord][i]))
+            i += 1
+        line += str(somme / j) + ","
+    return line
+
+
 def write_attributes_data(fd, json_data, params, in_file_name, true_file):
     i = 0
     attributes_number = 0
@@ -309,6 +354,8 @@ def write_attributes_data(fd, json_data, params, in_file_name, true_file):
                 if letter in "lmno":
                     next_letter = "" if len(params) <= (i+1) else params[i+1]
                     line, attributes_number = format_hard_sensors_attributes(letter, next_letter, attributes_number)
+                elif letter in "wxyz":
+                    line, attributes_number = format_average_attributes(letter, attributes_number)
                 else:
                     line = transform_attributes_string(attributes[letter]['name'], attributes[letter]['type'])
                     attributes_number += 1
@@ -326,6 +373,8 @@ def write_attributes_data(fd, json_data, params, in_file_name, true_file):
                 if letter in PARAMS_LIST:
                     if letter in "lmno":
                         line += write_data_sensors(params, letter, key, i)
+                    elif letter in "wxyz":
+                        line += write_data_average(params, letter, key, i)
                     elif letter == "s":
                         line += write_data_position(section) + ","
                     elif letter == "t":
@@ -334,7 +383,7 @@ def write_attributes_data(fd, json_data, params, in_file_name, true_file):
                         line += compute_downdown(old_key, key) + ","
                     elif letter == "v":
                         line += compute_latency(old_key, key) + ","
-                    elif letter == "w":
+                    elif letter == "A":
                         line += ("1" if in_file_name in true_file else "0") + ","
                     else:
                         line += write_data_default(letter, key) + ","
