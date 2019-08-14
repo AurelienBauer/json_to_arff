@@ -8,7 +8,7 @@ HEADER =    "% Generate by Json_to_arff script\n" \
             "% For an academic project at the University of Kent\n" \
             "@RELATION continuous_authentication\n\n"
 
-# abcdefgqrtuv
+# xwqfrgvtu
 
 attributes = {
     "a": {
@@ -484,7 +484,7 @@ def get_true_file(spe_params):
 def main():
     params, in_file, out_file, spe_params = parse_args()
     true_file = get_true_file(spe_params)
-    if "w" in params and true_file is None:
+    if "A" in params and true_file is None:
         print("You have to set a true file")
         exit(-1)
     if os.path.isdir(in_file):
