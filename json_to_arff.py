@@ -379,36 +379,6 @@ def compute_stddev(letter, key, coord, j, average):
         if attributes[letter]['relatedTo'] in key:
             if len(key[attributes[letter]['relatedTo']][coord]) > i:
                 x = float(json.dumps(key[attributes[letter]['relatedTo']][coord][i]))
-                somme += x - average
-        i += 1
-    result = math.pow(somme, 2) / j
-    if result == 0:
-        return 0
-    return math.sqrt(result)
-
-
-def write_data_stddev(params, letter, key, i):
-    line = ""
-    next_letter = "" if len(params) <= (i + 1) else params[i + 1]
-    j = parse_number_in_params(next_letter)
-    for coord in "xyz":
-        average = compute_average(letter, key, coord, j)
-        if average is None:
-            line += "?,"
-        else:
-            line += str(compute_stddev(letter, key, coord, j, average)) + ","
-        result = compute_average(letter, key, coord, j)
-        line += ("?" if result is None else str(result)) + ","
-    return line
-
-
-def compute_stddev(letter, key, coord, j, average):
-    i = 0
-    somme = 0
-    while i < j:
-        if attributes[letter]['relatedTo'] in key:
-            if len(key[attributes[letter]['relatedTo']][coord]) > i:
-                x = float(json.dumps(key[attributes[letter]['relatedTo']][coord][i]))
                 somme += math.pow(x - average, 2)
         i += 1
     result = somme / j
