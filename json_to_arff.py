@@ -484,6 +484,9 @@ def get_true_file(spe_params):
 def main():
     params, in_file, out_file, spe_params = parse_args()
     true_file = get_true_file(spe_params)
+    if "w" in params and true_file is None:
+        print("You have to set a true file")
+        exit(-1)
     if os.path.isdir(in_file):
         rec_read_files(params, in_file, out_file, spe_params, true_file)
     else:
