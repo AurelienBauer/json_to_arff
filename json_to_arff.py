@@ -1,7 +1,7 @@
 #!/usr/bin/python3
-import sys, json, os, ntpath
+import sys, json, os, ntpath, math
 
-PARAMS_LIST = "abcdefgijklmnopqrstuvwxyzA"
+PARAMS_LIST = "abcdefgijklmnopqrstuvwxyzABCDE"
 
 HEADER =    "% Generate by Json_to_arff script\n" \
             "% Author: Aurélien Bauer\n" \
@@ -126,7 +126,28 @@ attributes = {
     "A": {
         "name": "class",
         "type": "{0, 1}"
-    }
+    },
+    "B": {
+        "name": "StdDevRotationVectorOnPress",
+        "relatedTo": "RotationVectorOnPress",
+        "type": "NUMERIC"
+    },
+    "C": {
+        "name": "StdDevRotationVectorOnRelease",
+        "relatedTo": "RotationVectorOnRelease",
+        "type": "NUMERIC"
+    },
+    "D": {
+        "name": "StdDevLinearAccelerationOnPress",
+        "relatedTo": "LinearAccelerationOnPress",
+        "type": "NUMERIC"
+    },
+    "E": {
+        "name": "StdDevLinearAccelerationOnRelease",
+        "relatedTo": "LinearAccelerationOnRelease",
+        "type": "NUMERIC"
+    },
+
 }
 
 UNKNOWN_POSITION = "unknownPosition"
@@ -144,7 +165,7 @@ position = {
 
 
 def print_help():
-    print(" usage: json_to_arff.py [-abcdefgijklmnopqrstuvwxyzA] <input file path> <output file path>\n"
+    print(" usage: json_to_arff.py [-abcdefgijklmnopqrstuvwxyzABCDE] <input file path> <output file path>\n"
           "options [lmnowxyz] could be following by a number between 0 and 5, if no number are choosen the default value "
           "is 5.\n"
           "option [--concat] can be use to concat all the data if the <input file path> is a directory in one file ("
@@ -246,7 +267,7 @@ def open_output_file(out_file):
 def parse_number_in_params(next_letter):
     if next_letter.isdigit():
         nbr = int(next_letter)
-        return 5 if nbr > 5 else nbr
+        return 5 if nbr > 5 or nbr < 1 else nbr
     return 5
 
 
@@ -320,12 +341,24 @@ def write_data_sensors(params, letter, key, i):
     return format_hard_sensors_data(letter, next_letter, key)
 
 
-def format_average_attributes(letter, attributes_number):
+def format_stddev_average_attributes(letter, attributes_number):
     line = ""
 
     for coord in "XYZ":
         line += transform_attributes_string(attributes[letter]['name'] + coord, attributes[letter]['type'])
+        attributes_number += 1
     return line, attributes_number
+
+
+def compute_average(letter, key, coord, j):
+    i = 0
+    somme = 0
+    while i < j:
+        if attributes[letter]['relatedTo'] in key:
+            if len(key[attributes[letter]['relatedTo']][coord]) > i:
+                somme += float(json.dumps(key[attributes[letter]['relatedTo']][coord][i]))
+        i += 1
+    return None if somme / j == 0 else somme / j
 
 
 def write_data_average(params, letter, key, i):
@@ -334,15 +367,36 @@ def write_data_average(params, letter, key, i):
     j = parse_number_in_params(next_letter)
 
     for coord in "xyz":
-        i = 0
-        somme = 0
-        while i < j:
-            if attributes[letter]['relatedTo'] in key:
-                if len(key[attributes[letter]['relatedTo']][coord]) > i:
-                    somme += float(json.dumps(key[attributes[letter]['relatedTo']][coord][i]))
-            i += 1
-        result = "?" if somme / j == 0 else str(somme / j)
-        line += result + ","
+        result = compute_average(letter, key, coord, j)
+        line += ("?" if result is None else str(result)) + ","
+    return line
+
+
+def compute_stddev(letter, key, coord, j, average):
+    i = 0
+    somme = 0
+    while i < j:
+        if attributes[letter]['relatedTo'] in key:
+            if len(key[attributes[letter]['relatedTo']][coord]) > i:
+                x = float(json.dumps(key[attributes[letter]['relatedTo']][coord][i]))
+                somme += math.pow(x - average, 2)
+        i += 1
+    result = somme / j
+    if result == 0:
+        return 0
+    return math.sqrt(result)
+
+
+def write_data_stddev(params, letter, key, i):
+    line = ""
+    next_letter = "" if len(params) <= (i + 1) else params[i + 1]
+    j = parse_number_in_params(next_letter)
+    for coord in "xyz":
+        average = compute_average(letter, key, coord, j)
+        if average is None:
+            line += "?,"
+        else:
+            line += str(compute_stddev(letter, key, coord, j, average)) + ","
     return line
 
 
@@ -355,8 +409,8 @@ def write_attributes_data(fd, json_data, params, in_file_name, true_file):
                 if letter in "lmno":
                     next_letter = "" if len(params) <= (i+1) else params[i+1]
                     line, attributes_number = format_hard_sensors_attributes(letter, next_letter, attributes_number)
-                elif letter in "wxyz":
-                    line, attributes_number = format_average_attributes(letter, attributes_number)
+                elif letter in "wxyzBCDE":
+                    line, attributes_number = format_stddev_average_attributes(letter, attributes_number)
                 else:
                     line = transform_attributes_string(attributes[letter]['name'], attributes[letter]['type'])
                     attributes_number += 1
@@ -376,6 +430,8 @@ def write_attributes_data(fd, json_data, params, in_file_name, true_file):
                         line += write_data_sensors(params, letter, key, i)
                     elif letter in "wxyz":
                         line += write_data_average(params, letter, key, i)
+                    elif letter in "BCDE":
+                        line += write_data_stddev(params, letter, key, i)
                     elif letter == "s":
                         line += write_data_position(section) + ","
                     elif letter == "t":
