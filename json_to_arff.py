@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import sys, json, os, ntpath, math
 
-PARAMS_LIST = "abcdefgijklmnopqrstuvwxyzABCDE"
+PARAMS_LIST = "abcdefgijklmnopqrstuvwxyzBCDEA"
 
 HEADER =    "% Generate by Json_to_arff script\n" \
             "% Author: Aurélien Bauer\n" \
